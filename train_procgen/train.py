@@ -55,7 +55,7 @@ def main():
     format_strs = ['csv', 'stdout'] if log_comm.Get_rank() == 0 else []
     logger.configure(dir=LOG_DIR, 
                      format_strs=format_strs,
-                     log_suffix="total_timesteps_{}_num_levels_{}".format(args.test_worker_interval,
+                     log_suffix="total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
                                                                           num_levels))
 
     logger.info("creating environment")
@@ -81,7 +81,7 @@ def main():
     model = ppo2.learn(
                     env=venv,
                     network=conv_fn,
-                    total_timesteps=args.test_worker_interval,
+                    total_timesteps=args.total_timesteps,
                     save_interval=0,
                     nsteps=nsteps,
                     nminibatches=nminibatches,
@@ -102,7 +102,7 @@ def main():
                 )
 
     # Save the model
-    model.save("model/model_total_timesteps_{}_num_levels_{}".format(args.test_worker_interval,
+    model.save("model/model_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
                                                                      num_levels))
 
     # Test the model
