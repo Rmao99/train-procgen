@@ -13,7 +13,7 @@ from baselines import logger
 from mpi4py import MPI
 import argparse
 
-LOG_DIR = '/tmp/procgen'
+LOG_DIR = 'log'
 
 def main():
     num_envs = 64
@@ -25,7 +25,7 @@ def main():
     nminibatches = 8
     ppo_epochs = 3
     clip_range = .2
-    timesteps_per_proc = 50_000_000
+    # timesteps_per_proc = 50_000_000
     use_vf_clipping = True
 
     parser = argparse.ArgumentParser(description='Process procgen training arguments.')
@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--num_levels', type=int, default=0)
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
+    parser.add_argument('--total_timesteps', type=int, default=0)
 
     args = parser.parse_args()
 
@@ -52,7 +53,10 @@ def main():
 
     log_comm = comm.Split(1 if is_test_worker else 0, 0)
     format_strs = ['csv', 'stdout'] if log_comm.Get_rank() == 0 else []
-    logger.configure(dir=LOG_DIR, format_strs=format_strs)
+    logger.configure(dir=LOG_DIR, 
+                     format_strs=format_strs,
+                     log_suffix="total_timesteps_{}_num_levels_{}".format(args.test_worker_interval,
+                                                                          num_levels))
 
     logger.info("creating environment")
     venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=num_levels, start_level=args.start_level, distribution_mode=args.distribution_mode)
@@ -74,28 +78,38 @@ def main():
     conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
 
     logger.info("training")
-    ppo2.learn(
-        env=venv,
-        network=conv_fn,
-        total_timesteps=timesteps_per_proc,
-        save_interval=0,
-        nsteps=nsteps,
-        nminibatches=nminibatches,
-        lam=lam,
-        gamma=gamma,
-        noptepochs=ppo_epochs,
-        log_interval=1,
-        ent_coef=ent_coef,
-        mpi_rank_weight=mpi_rank_weight,
-        clip_vf=use_vf_clipping,
-        comm=comm,
-        lr=learning_rate,
-        cliprange=clip_range,
-        update_fn=None,
-        init_fn=None,
-        vf_coef=0.5,
-        max_grad_norm=0.5,
-    )
+    model = ppo2.learn(
+                    env=venv,
+                    network=conv_fn,
+                    total_timesteps=args.test_worker_interval,
+                    save_interval=0,
+                    nsteps=nsteps,
+                    nminibatches=nminibatches,
+                    lam=lam,
+                    gamma=gamma,
+                    noptepochs=ppo_epochs,
+                    log_interval=1,
+                    ent_coef=ent_coef,
+                    mpi_rank_weight=mpi_rank_weight,
+                    clip_vf=use_vf_clipping,
+                    comm=comm,
+                    lr=learning_rate,
+                    cliprange=clip_range,
+                    update_fn=None,
+                    init_fn=None,
+                    vf_coef=0.5,
+                    max_grad_norm=0.5,
+                )
+
+    # Save the model
+    model.save("model/model_total_timesteps_{}_num_levels_{}".format(args.test_worker_interval,
+                                                                     num_levels))
+
+    # Test the model
+    # from baselines.ppo2.model import Model
+    # model_fn = Model
+    # check https://github.com/openai/baselines/blob/master/baselines/ppo2/test_microbatches.py
+    # the link has how to test on the testing environment
 
 if __name__ == '__main__':
     main()
