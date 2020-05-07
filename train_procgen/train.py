@@ -68,6 +68,16 @@ def main():
 
     venv = VecNormalize(venv=venv, ob=False)
 
+    logger.info("creating evaluation environment")
+    eval_venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=100, start_level=500, dist_mode)
+    eval_venv = VecExtractDictObs(eval_venv, "rgb")
+
+    venv = VecMonitor(
+        venv=eval_venv, filename=None, keep_buf=100,
+    )
+
+    venv = VecNormalize(venv=eval_venv, ob=False)
+
     logger.info("creating tf session")
     setup_mpi_gpus()
     config = tf.ConfigProto()
@@ -104,12 +114,6 @@ def main():
     # Save the model
     model.save("model/model_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
                                                                      num_levels))
-
-    # Test the model
-    # from baselines.ppo2.model import Model
-    # model_fn = Model
-    # check https://github.com/openai/baselines/blob/master/baselines/ppo2/test_microbatches.py
-    # the link has how to test on the testing environment
 
 if __name__ == '__main__':
     main()
