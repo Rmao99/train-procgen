@@ -90,6 +90,7 @@ def main():
     logger.info("training")
     model = ppo2.learn(
                     env=venv,
+                    eval_venv=eval_venv,
                     network=conv_fn,
                     total_timesteps=args.total_timesteps,
                     save_interval=0,
