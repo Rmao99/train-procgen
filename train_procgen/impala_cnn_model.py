@@ -14,7 +14,7 @@ def register(name):
         return func
     return _thunk
 
-def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
+def build_impala_cnn_2(unscaled_images, depths=[16,32,32], **conv_kwargs):
     """
     Model used in the paper "IMPALA: Scalable Distributed Deep-RL with
     Importance Weighted Actor-Learner Architectures" https://arxiv.org/abs/1802.01561
@@ -64,5 +64,5 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
 @register("impala_cnn")
 def impala_cnn(**conv_kwargs):
     def network_fn(X):
-        return build_impala_cnn(X)
+        return build_impala_cnn_2(X)
     return network_fn
