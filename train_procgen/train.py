@@ -55,8 +55,8 @@ def main():
     format_strs = ['csv', 'stdout'] if log_comm.Get_rank() == 0 else []
     logger.configure(dir=LOG_DIR, 
                      format_strs=format_strs,
-                     log_suffix="total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
-                                                                          num_levels))
+                     log_suffix="_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
+                                                                           num_levels))
 
     logger.info("creating environment")
     venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=num_levels, start_level=args.start_level, distribution_mode=args.distribution_mode)
@@ -69,7 +69,7 @@ def main():
     venv = VecNormalize(venv=venv, ob=False)
 
     logger.info("creating evaluation environment")
-    eval_venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=100, start_level=500, distribution_mode=args.distribution_mode)
+    eval_venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=100, start_level=2000, distribution_mode=args.distribution_mode)
     eval_venv = VecExtractDictObs(eval_venv, "rgb")
 
     eval_venv = VecMonitor(
@@ -90,7 +90,7 @@ def main():
     logger.info("training")
     model = ppo2.learn(
                     env=venv,
-                    eval_venv=eval_venv,
+                    eval_env=eval_venv,
                     network=conv_fn,
                     total_timesteps=args.total_timesteps,
                     save_interval=0,
