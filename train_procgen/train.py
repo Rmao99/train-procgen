@@ -2,7 +2,7 @@ import tensorflow as tf
 from baselines.ppo2 import ppo2
 
 from baselines.common.models import build_impala_cnn
-from impala_cnn_model import build_impala_cnn_2
+# from impala_cnn_model import build_impala_cnn_2
 
 from baselines.common.mpi_util import setup_mpi_gpus
 from procgen import ProcgenEnv
@@ -89,7 +89,7 @@ def main():
     sess.__enter__()
 
     ## change between build_impala_cnn for original implementation and build_impala_cnn_2 for custom
-    conv_fn = lambda x: build_impala_cnn_2(x, depths=[16,32,32], emb_size=256)
+    conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
 
     logger.info("training")
     model = ppo2.learn(
