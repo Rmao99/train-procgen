@@ -1,8 +1,8 @@
 import tensorflow as tf
 from baselines.ppo2 import ppo2
 
-from baselines.common.models import build_impala_cnn
-# from impala_cnn_model import build_impala_cnn_2
+#from baselines.common.models import build_impala_cnn
+from impala_cnn_model import build_impala_cnn
 
 from baselines.common.mpi_util import setup_mpi_gpus
 from procgen import ProcgenEnv
