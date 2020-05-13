@@ -16,7 +16,7 @@ from baselines import logger
 from mpi4py import MPI
 import argparse
 
-LOG_DIR = 'log'
+LOG_DIR = 'dropout_log'
 
 def main():
     num_envs = 64
