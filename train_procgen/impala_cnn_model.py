@@ -39,7 +39,7 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
 
         out = conv_layer(out, depth)
         out = tf.nn.relu(out)
-        out = tf.nn.dropout(out,0.8)
+        out = tf.nn.dropout(out,0.7)
         out = conv_layer(out, depth)
         return out + inputs
 
