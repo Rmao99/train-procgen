@@ -1,8 +1,8 @@
 import csv
 from matplotlib import pyplot as plt
 
-dropout_file = 'dropout_log/progress_total_timesteps_5000000_num_levels_50.csv'
-baseline_file = 'log/progress_total_timesteps_5000000_num_levels_50.csv'
+dropout_file = 'dropout_log/progress_total_timesteps_10000000_num_levels_50.csv'
+baseline_file = 'log/progress_total_timesteps_10000000_num_levels_50.csv'
 
 f = open(dropout_file)
 csv_f = csv.reader(f)

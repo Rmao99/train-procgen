@@ -16,8 +16,24 @@ from baselines import logger
 from mpi4py import MPI
 import argparse
 
-LOG_DIR = 'dropout_log'
 
+#from ppo2 learn
+import os
+import time
+import numpy as np
+import os.path as osp
+from baselines import logger
+from collections import deque
+from baselines.common import explained_variance, set_global_seeds
+from baselines.common.policies import build_policy
+try:
+    from mpi4py import MPI
+except ImportError:
+    MPI = None
+from baselines.ppo2.runner import Runner
+
+LOG_DIR = 'dropout_log'
+MODEL_PATH = ''
 def main():
     num_envs = 64
     learning_rate = 5e-4
@@ -61,7 +77,7 @@ def main():
                      log_suffix="_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
                                                                            num_levels))
 
-    logger.info("creating environment")
+    '''logger.info("creating environment")
     venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=num_levels, start_level=args.start_level, distribution_mode=args.distribution_mode)
     venv = VecExtractDictObs(venv, "rgb")
 
@@ -69,9 +85,9 @@ def main():
         venv=venv, filename=None, keep_buf=100,
     )
 
-    venv = VecNormalize(venv=venv, ob=False)
+    venv = VecNormalize(venv=venv, ob=False)'''
 
-    logger.info("creating evaluation environment")
+    logger.info("Creating dropout evaluation environment")
     eval_venv = ProcgenEnv(num_envs=num_envs, env_name=args.env_name, num_levels=100, start_level=2000, distribution_mode=args.distribution_mode)
     eval_venv = VecExtractDictObs(eval_venv, "rgb")
 
@@ -88,36 +104,42 @@ def main():
     sess = tf.Session(config=config)
     sess.__enter__()
 
-    conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
+    conv_fn = lambda x: build_impala_cnn(x, is_train=False, depths=[16,32,32], emb_size=256)
 
-    logger.info("training")
-    model = ppo2.learn(
-                    env=venv,
-                    eval_env=eval_venv,
-                    network=conv_fn,
-                    total_timesteps=args.total_timesteps,
-                    save_interval=0,
-                    nsteps=nsteps,
-                    nminibatches=nminibatches,
-                    lam=lam,
-                    gamma=gamma,
-                    noptepochs=ppo_epochs,
-                    log_interval=1,
-                    ent_coef=ent_coef,
-                    mpi_rank_weight=mpi_rank_weight,
-                    clip_vf=use_vf_clipping,
-                    comm=comm,
-                    lr=learning_rate,
-                    cliprange=clip_range,
-                    update_fn=None,
-                    init_fn=None,
-                    vf_coef=0.5,
-                    max_grad_norm=0.5,
-                )
+    logger.info("testing dropout")
+    
 
-    # Save the model
-    model.save("model/model_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
-                                                                     num_levels))
+    
+    policy = build_policy(env,conv_fn,**network_kwargs)
 
+    nenvs = eval_venv.num_envs
+    ob_space = eval_venv.observation_space
+    ab_space = eval_venv.action_space
+    nbatch = nenvs * nsteps
+    nbatch_train = nbatch//nminibatches
+
+    
+    # Instantiate the model object (that creates act_model and train_model)
+    model_fn = Model    #modified from baseline ppo2 learn
+
+    model = model_fn(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=nenvs, nbatch_train=nbatch_train,
+                    nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
+                    max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
+    model.load(MODEL_PATH)
+    eval_runner = Runner(env=eval_venv, model=model, nsteps=nsteps, gamma=.999, lam=.95)
+
+    eval_epinfobuf = deque(maxlen=100)
+    nupdates = total_timesteps//nbatch
+
+    log_interval = 1
+    for update in range(1, nupdates+1):
+        eval_obs, eval_returns, eval_masks, eval_actions, eval_values, eval_neglogpacs, eval_states, eval_epinfos = eval_runner.run()
+        eval_epinfobuf.extend(eval_epinfos)
+        if update % log_interval == 0 or update == 1:
+            logger.logkv('eval_eprewmean', safemean([epinfo['r'] for epinfo in eval_epinfobuf]) )
+            logger.logkv('eval_eplenmean', safemean([epinfo['l'] for epinfo in eval_epinfobuf]) )
+            
+            logger.dumpkvs()
+   # Save the model
 if __name__ == '__main__':
     main()

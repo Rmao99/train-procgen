@@ -14,7 +14,7 @@ def register(name):
         return func
     return _thunk
 
-def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
+def build_impala_cnn(unscaled_images, is_train = True, depths=[16,32,32], **conv_kwargs):
     """
     Model used in the paper "IMPALA: Scalable Distributed Deep-RL with
     Importance Weighted Actor-Learner Architectures" https://arxiv.org/abs/1802.01561
@@ -39,7 +39,8 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
 
         out = conv_layer(out, depth)
         out = tf.nn.relu(out)
-        out = tf.nn.dropout(out,0.7)
+        if is_train:
+            out = tf.nn.dropout(out,0.7)
         out = conv_layer(out, depth)
         return out + inputs
 
