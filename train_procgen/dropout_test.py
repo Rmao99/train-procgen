@@ -32,12 +32,19 @@ except ImportError:
     MPI = None
 from baselines.ppo2.runner import Runner
 
-LOG_DIR = 'dropout_log'
-MODEL_PATH = ''
+def safemean(xs):
+    return np.nan if len(xs) == 0 else np.mean(xs)
+
+LOG_DIR = 'test_batch_log'
+MODEL_PATH = 'batch_model/model_total_timesteps_5000000_num_levels_50'
 def main():
     num_envs = 64
     learning_rate = 5e-4
     ent_coef = .01
+    ##new defined
+    vf_coef = 0.5
+    max_grad_norm = 0.5
+    ###########
     gamma = .999
     lam = .95
     nsteps = 256
@@ -110,16 +117,17 @@ def main():
     
 
     
-    policy = build_policy(env,conv_fn,**network_kwargs)
+    policy = build_policy(eval_venv,conv_fn)
 
     nenvs = eval_venv.num_envs
     ob_space = eval_venv.observation_space
-    ab_space = eval_venv.action_space
+    ac_space = eval_venv.action_space
     nbatch = nenvs * nsteps
     nbatch_train = nbatch//nminibatches
-
     
     # Instantiate the model object (that creates act_model and train_model)
+    
+    from baselines.ppo2.model import Model
     model_fn = Model    #modified from baseline ppo2 learn
 
     model = model_fn(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=nenvs, nbatch_train=nbatch_train,
@@ -129,17 +137,19 @@ def main():
     eval_runner = Runner(env=eval_venv, model=model, nsteps=nsteps, gamma=.999, lam=.95)
 
     eval_epinfobuf = deque(maxlen=100)
-    nupdates = total_timesteps//nbatch
+    nupdates = args.total_timesteps//nbatch
 
     log_interval = 1
     for update in range(1, nupdates+1):
+    #single upate to test    
         eval_obs, eval_returns, eval_masks, eval_actions, eval_values, eval_neglogpacs, eval_states, eval_epinfos = eval_runner.run()
         eval_epinfobuf.extend(eval_epinfos)
         if update % log_interval == 0 or update == 1:
             logger.logkv('eval_eprewmean', safemean([epinfo['r'] for epinfo in eval_epinfobuf]) )
             logger.logkv('eval_eplenmean', safemean([epinfo['l'] for epinfo in eval_epinfobuf]) )
-            
+            logger.logkv('misc/total_timesteps',update*nbatch)
             logger.dumpkvs()
+    eval_venv.close()
    # Save the model
 if __name__ == '__main__':
     main()
