@@ -14,6 +14,49 @@ def register(name):
         return func
     return _thunk
 
+#Layer norm code from here:
+#https://gist.github.com/vitchyr/bd2dfc7946c95c5291fd9416baebc051
+LAYER_NORM_BIAS_DEFAULT_NAME = "ln_bias"
+LAYER_NORM_GAIN_DEFAULT_NAME = "ln_gain"
+LAYER_NORMALIZATION_DEFAULT_NAME = "layer_normalization"
+
+def layer_normalize(
+        input_pre_nonlinear_activations,
+        input_shape,
+        epsilon=1e-5,
+        name=LAYER_NORMALIZATION_DEFAULT_NAME,
+):
+    """
+    Layer normalizes a 2D tensor along its second axis, which corresponds to
+    normalizing within a layer.
+    :param input_pre_nonlinear_activations:
+    :param input_shape:
+    :param name: Name for the variables in this layer.
+    :param epsilon: The actual normalized value is
+    ```
+        norm = (x - mean) / sqrt(variance + epsilon)
+    ```
+    for numerical stability.
+    :return: Layer-normalized pre-non-linear activations
+    """
+    mean, variance = tf.nn.moments(input_pre_nonlinear_activations, [1],
+                                   keep_dims=True)
+    normalised_input = (input_pre_nonlinear_activations - mean) / tf.sqrt(
+        variance + epsilon)
+    with tf.variable_scope(name):
+        gains = tf.get_variable(
+            LAYER_NORM_GAIN_DEFAULT_NAME,
+            input_shape,
+            initializer=tf.constant_initializer(1.),
+        )
+        biases = tf.get_variable(
+            LAYER_NORM_BIAS_DEFAULT_NAME,
+            input_shape,
+            initializer=tf.constant_initializer(0.),
+        )
+    return normalised_input * gains + biases
+
+
 def build_impala_cnn(unscaled_images, is_train = True, depths=[16,32,32], **conv_kwargs):
     """
     Model used in the paper "IMPALA: Scalable Distributed Deep-RL with
@@ -38,7 +81,8 @@ def build_impala_cnn(unscaled_images, is_train = True, depths=[16,32,32], **conv
         out = tf.nn.relu(inputs)
 
         out = conv_layer(out, depth)
-        out = tf.compat.v1.layers.batch_normalization(out,training=is_train)
+        #out = tf.compat.v1.layers.batch_normalization(out,training=is_train)
+        out = layer_normalize(out,out.shape)
         out = tf.nn.relu(out)
         #if is_train:
         #out = tf.nn.dropout(out,0.7)
