@@ -1,4 +1,5 @@
 All new code is under train-procgen/train_procgen, which involves training the models in train.py, which can be done using the following command:
+A single model was saved in model/ to conserve space, but all the other ones can be generated
 
 python -m train_procgen.train --env_name fruitbot --distribution_mode easy --num_levels 50 --total_timesteps 5000000
 
