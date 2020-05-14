@@ -12,7 +12,7 @@ For dropout, make sure the two dropout lines in impala_cnn_model.py are uncommen
 
 python dropout_test.py --env_name fruitbot --distribution_mode easy --num_levels 50 --total_timesteps 100000
 
-Run with this command and only 100000 timesteps to see testing results, the lastoutputs are the testing rewards saved in a separate testing_dropout_log folde
+Run with this command and only 100000 timesteps to see testing results, the lastoutputs are the testing rewards saved in a separate test_dropout_log folder
 
 Batchnorm logs are left inside however, however they did not output correct results so we focused on dropout
 
