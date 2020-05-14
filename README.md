@@ -1,5 +1,22 @@
-**Status:** Archive (code is provided as-is, no updates expected)
+All new code is under train-procgen/train_procgen, which involves training the models in train.py, which can be done using the following command:
 
+python -m train_procgen.train --env_name fruitbot --distribution_mode easy --num_levels 50 --total_timesteps 5000000
+
+Make sure to go into impala_cnn_model.py and comment out the two lines in the res_layers that use dropout for baseline results.
+
+For generating the graphs, run this command for each of the configurations, aka num_levels from 50,100,250,500, and total_timesteps from 5M,10M,50M for a total of 12 logs and models.
+
+Plotting graphs can be found to generate the exact same 7 plots in the writeup and are automatically saved under graphs/
+
+For dropout, make sure the two dropout lines in impala_cnn_model.py are uncommented, and change the LOG dir and final model saving path in train.py so it doesn't override the baseline. Then run dropout_test.py, which is train.py with ppo2.learn replaced with specific lines that only test it.
+
+python dropout_test.py --env_name fruitbot --distribution_mode easy --num_levels 50 --total_timesteps 100000
+
+Run with this command and only 100000 timesteps to see testing results, the lastoutputs are the testing rewards saved in a separate testing_dropout_log folde
+
+Batchnorm logs are left inside however, however they did not output correct results so we focused on dropout
+
+All setup can be done below here, exactly as the original train-procgen requirements.
 # Leveraging Procedural Generation to Benchmark Reinforcement Learning
 
 #### [[Blog Post]](https://openai.com/blog/procgen-benchmark/) [[Paper]](https://arxiv.org/abs/1912.01588)

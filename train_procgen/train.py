@@ -16,7 +16,7 @@ from baselines import logger
 from mpi4py import MPI
 import argparse
 
-LOG_DIR = 'batch_log'
+LOG_DIR = 'dropout_log'
 
 def main():
     num_envs = 64
@@ -116,7 +116,7 @@ def main():
                 )
 
     # Save the model
-    model.save("batch_model/model_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
+    model.save("dropout_model/model_total_timesteps_{}_num_levels_{}".format(args.total_timesteps,
                                                                      num_levels))
 
 if __name__ == '__main__':

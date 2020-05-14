@@ -82,10 +82,10 @@ def build_impala_cnn(unscaled_images, is_train = True, depths=[16,32,32], **conv
 
         out = conv_layer(out, depth)
         #out = tf.compat.v1.layers.batch_normalization(out,training=is_train)
-        out = layer_normalize(out,out.shape)
+        #out = layer_normalize(out,out.shape)
         out = tf.nn.relu(out)
-        #if is_train:
-        #out = tf.nn.dropout(out,0.7)
+        if is_train:
+            out = tf.nn.dropout(out,0.7)
         out = conv_layer(out, depth)
         return out + inputs
 

@@ -35,8 +35,8 @@ from baselines.ppo2.runner import Runner
 def safemean(xs):
     return np.nan if len(xs) == 0 else np.mean(xs)
 
-LOG_DIR = 'test_batch_log'
-MODEL_PATH = 'batch_model/model_total_timesteps_5000000_num_levels_50'
+LOG_DIR = 'test_dropout_log'
+MODEL_PATH = 'dropout_model/model_total_timesteps_5000000_num_levels_50'
 def main():
     num_envs = 64
     learning_rate = 5e-4
